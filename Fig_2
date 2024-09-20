@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+
+# Fig 2a
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+import matplotlib.pyplot as plt   
+
+# set font to Arial
+import matplotlib as mpl
+mpl.rc('font',family='Arial')
+
+# datasets can be found in accompanying Zenodo repository
+
+ds = xr.open_dataset('tmax_z_normed2.nc')
+tmax_z_normed = ds.tmax_z.values # domain-averaged Tmax standardized anomalies
+vals = tmax_z_normed
+
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates['year'] = pd.to_datetime(dates.iloc[:,0]).dt.year
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+dates.reset_index(inplace=True)
+
+vals2 = vals[15250:15280] # subset to June 2023
+
+# calculate daily records in June (1940-2022)
+dates = dates[dates.month == 6]
+dates = dates[~(dates.year == 2023)]
+vals3 = vals[dates.index.values]
+table = np.reshape(vals3,(83,30))
+
+daily_max = []
+for k in range(30):
+    day = table[:,k]
+    daily_max.append(np.max(day))
+
+ds = xr.open_dataset('sm_z_normed2.nc')
+sm_z_normed = ds.sm.values # domain-averaged SM standardized anomalies
+valz = sm_z_normed
+
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates['year'] = pd.to_datetime(dates.iloc[:,0]).dt.year
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+dates.reset_index(inplace=True)
+
+valz2 = valz[15250:15280] # subset to June 2023
+
+# calculate daily records in June (1940-2022)
+dates = dates[dates.month == 6]
+dates = dates[~(dates.year == 2023)]
+valz3 = valz[dates.index.values]
+table = np.reshape(valz3,(83,30))
+
+daily_max2 = []
+for k in range(30):
+    day = table[:,k]
+    daily_max2.append(np.min(day)) # switched max to min for soil moisture
+
+valz2 = valz2 * -1
+daily_max2 = np.array(daily_max2) * -1
+
+ds = xr.open_dataset('z500_z_normed.nc')
+z500_z_normed = ds.z500_detrended.values # domain-averaged, detrended Z500 standardized anomalies
+z500_z_normed = np.reshape(z500_z_normed,(15372,11392)
+valss = np.nanmean(z500_z_normed,axis=1)
+
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates['year'] = pd.to_datetime(dates.iloc[:,0]).dt.year
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+dates.reset_index(inplace=True)
+
+valss2 = valss[15250:15280] # subset to June 2023
+
+# calculate daily records in June (1940-2022)
+dates = dates[dates.month == 6]
+dates = dates[~(dates.year == 2023)]
+valss3 = valss[dates.index.values]
+table = np.reshape(valss3,(83,30))
+
+daily_max3 = []
+for k in range(30):
+    day = table[:,k]
+    daily_max3.append(np.max(day))
+
+fig = plt.figure(figsize=(8,6))
+plt.plot(vals2,'-o', color='orangered')
+plt.plot(daily_max,'--', color='orangered', lw=1)
+plt.plot(valz2,'-o', color='tab:brown')
+plt.plot(daily_max2,'--', color='tab:brown', lw=1)
+plt.plot(valss2,'-o', color='k')
+plt.plot(daily_max3,'--', color='k', lw=1)
+plt.scatter(19,vals2[19],marker='*',c='w',edgecolor='k',s=300)
+plt.scatter(20,vals2[20],marker='*',c='w',edgecolor='k',s=300)
+plt.scatter(19,valz2[19],marker='*',c='w',edgecolor='k',s=300)
+plt.scatter(20,valz2[20],marker='*',c='w',edgecolor='k',s=300)
+plt.scatter(21,valz2[21],marker='*',c='w',edgecolor='k',s=300)
+#plt.grid(linewidth=0.5, color='0.5', alpha=0.5, linestyle='-.')
+plt.xticks([0,9,19,29], ('June 1','June 10','June 20','June 30'), fontsize = 13)
+plt.yticks(np.arange(-2,4.01,0.5), fontsize=13)
+plt.axhline(y=0,color='0.5',linestyle='--')
+plt.axvline(x=14,color='0.5',linestyle='--')
+plt.axvline(x=27,color='0.5',linestyle='--')
+plt.ylabel('Standardized anomaly', fontsize = 18)
+
+# re-plot this on extended y-axis to make legend
+fig = plt.figure(figsize=(8,6))
+#plt.plot(vals1,'--', color='tab:brown')
+plt.plot(vals2,'-o', color='orangered')
+plt.plot(daily_max,'--', color='orangered', lw=1)
+plt.plot(valz2,'-o', color='tab:brown')
+plt.plot(daily_max2,'--', color='tab:brown', lw=1)
+plt.plot(valss2,'-o', color='k')
+plt.plot(daily_max3,'--', color='k', lw=1)
+plt.yticks(np.arange(-5,4.01,0.5), fontsize=13)
+l = plt.legend(['June 2023 Tmax',
+            '1940-2022 Tmax daily records',
+            'June 2023 SM (negative)',
+            '1940-2022 SM daily records (negative)',
+            'June 2023 Z500 z-score',
+            '1940-2022 Z500 z-score daily records'], 
+            loc='lower right', fontsize=15)
+for text in l.get_texts():
+    s = str(text)
+    print(s)
+    if s[26] == '\'':
+        text.set_color('orangered')
+    elif s[27] == 'd':
+        text.set_color('orangered')
+    elif s[25] == '(':
+        text.set_color('tab:brown')
+    elif s[25] == 'd':
+        text.set_color('tab:brown')
+    elif s[34] == '\'':
+        text.set_color('k')
+    elif s[35] == 'd':
+        text.set_color('k')
+
+# Fig 2b
+
+ds = xr.open_dataset('tmax_amjjas2_z.nc')
+tmax_z = ds.tmax.values
+
+subset = tmax_z[15264:15278,:]
+var = np.nanmean(subset,axis=0)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('RdBu_r',48))
+plt.title('Tmax anomalies during June 15-28, 2023', size=25)
+#cb = plt.colorbar(ticks=np.arange(-3,3.01,0.5))
+#cb.ax.tick_params(labelsize=15)
+plt.clim(-3,3)
+m.readshapefile('texas_mexico',name='oceans',color='b',linewidth=2)  
+plt.savefig('fig_3e.pdf',dpi=600) 
+
+# Fig 2c
+
+ds = xr.open_dataset('sm_amjjas2_z.nc')
+sm_amjjas2_z = ds.sm.values
+
+subset = sm_amjjas2_z[15264:15278,:]
+var = np.nanmean(subset,axis=0)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('BrBG',24))
+plt.title('Soil moist. anomalies during June 15-28, 2023', size=18)
+#cb = plt.colorbar(ticks=np.arange(-3,3.01,0.5))
+#cb.ax.tick_params(labelsize=15)
+plt.clim(-3,3)
+m.readshapefile('texas_mexico',name='oceans',color='b',linewidth=2)  
+
+# Fig 2d
+
+ds = xr.open_dataset('z500_z_detrended.nc')
+zvec = ds.z500.values # detrended Z500 z-scores 
+zvec = np.reshape(zvec,(15372,11392)
+
+var = zvec[15264:15278,:] # date index (0 to 15371) represents all days between April-September, 1940-2023
+var = np.nanmean(var,axis=0)
+var = np.reshape(var,(89,128))
+lat = np.arange(14.75,36.76,0.25)
+lon = np.arange(-118.5,-86.74,0.25)
+lon, lat = np.meshgrid(lon, lat)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.7E6, height=3.3E6,
+            lat_0=25, lon_0=-102.6)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('RdBu_r',48))
+plt.title('Standardized, detrended Z500 anomalies during June 15-28, 2023', size=18)
+#cb = plt.colorbar(ticks=np.arange(-3,3.01,0.5), orientation='horizontal', aspect=45)
+#cb.ax.tick_params(labelsize=15)
+plt.clim(-3,3)
+
+
+
