@@ -163,7 +163,7 @@ plt.title('Tmax anomalies during June 15-28, 2023', size=25)
 #cb = plt.colorbar(ticks=np.arange(-3,3.01,0.5))
 #cb.ax.tick_params(labelsize=15)
 plt.clim(-3,3)
-m.readshapefile('texas_mexico',name='oceans',color='b',linewidth=2)  
+m.readshapefile('texas_mexico',name='null',color='b',linewidth=2)  
 plt.savefig('fig_3e.pdf',dpi=600) 
 
 # Fig 2c
@@ -187,7 +187,7 @@ plt.title('Soil moist. anomalies during June 15-28, 2023', size=18)
 #cb = plt.colorbar(ticks=np.arange(-3,3.01,0.5))
 #cb.ax.tick_params(labelsize=15)
 plt.clim(-3,3)
-m.readshapefile('texas_mexico',name='oceans',color='b',linewidth=2)  
+m.readshapefile('texas_mexico',name='null',color='b',linewidth=2)  
 
 # Fig 2d
 
