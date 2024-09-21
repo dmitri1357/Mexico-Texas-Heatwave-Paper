@@ -1,0 +1,895 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt   
+from mpl_toolkits.basemap import Basemap
+
+# set font to Arial
+import matplotlib as mpl
+mpl.rc('font',family='Arial')
+
+# datasets can be found in accompanying Zenodo repository
+
+all_corrs = np.load('all_corrs_cesm_resolution.npy')
+
+this_day = all_corrs[15269,:]
+mats = np.zeros(15372)
+for j in range(15372):
+    if this_day[j] > 0.8: # using 0.8 as the pattern correlation cutoff
+        mats[j] = 1
+
+splits = np.split(mats,84)
+counts = [np.nansum(splits[k]) for k in range(84)]
+counts = np.array(counts)
+
+all_counts = np.load('all_counts.npy')
+all_means = np.nanmean(all_counts,axis=0)
+
+proj = all_counts[:,84:]
+means = np.nanmean(proj,axis=0)
+hist = all_counts[:,:84]
+means_hist = np.nanmean(hist,axis=0)
+
+blanks = np.empty(84)
+blanks[:] = np.nan
+all_counts2 = np.empty([40,161])
+for k in range(40):
+    ens = proj[k,:]
+    all_counts2[k,:] = np.hstack([blanks,ens])
+
+future_counts = np.hstack([blanks,means])
+
+blanks = np.empty(77)
+blanks[:] = np.nan
+all_counts2_hist = np.empty([40,161])
+for k in range(40):
+    ens = hist[k,:]
+    all_counts2_hist[k,:] = np.hstack([ens,blanks])
+
+hist_counts = np.hstack([means_hist,blanks])
+
+from scipy import stats
+
+# compute trend
+x = np.arange(77)
+y = all_means[84:]
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(77):
+    intercept += slope
+    vals1.append(intercept)
+slope*77 # -0.6 days
+
+# permutation test for statistical significance of trend
+x = np.arange(77)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p = 0.017
+
+blanks = np.empty(84)
+blanks[:] = np.nan
+
+vals1 = np.array(vals1)
+trendline = np.hstack([blanks,vals1])
+
+# compute trend of hist
+x = np.arange(84)
+y = all_means[:84]
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(84):
+    intercept += slope
+    vals1.append(intercept)
+slope*84 # -0.4 days
+
+# permutation test for statistical significance of trend
+x = np.arange(84)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p = 0.055
+
+blanks = np.empty(77)
+blanks[:] = np.nan
+
+vals1 = np.array(vals1)
+trendline_hist = np.hstack([vals1,blanks])
+
+# compute trends for all 40 ensemble members (future)
+
+proj = all_counts[:,84:]
+
+trends = np.empty(40)
+pval_percs = np.empty(40)
+for k in range(40):
+    x = np.arange(77)
+    y = proj[k,:]
+    intercept = stats.linregress(x,y)[1]
+    slope = stats.linregress(x,y)[0]
+    vals1 = []
+    for j in range(77):
+        intercept += slope
+        vals1.append(intercept)
+    trends[k] = slope*77
+    
+    x = np.arange(77)
+    slopes1 = np.empty(10000)
+    for i in range(10000):
+        run = np.random.permutation(y)
+        slopes1[i] = stats.linregress(x,run)[0]
+    pval_percs[k] = stats.percentileofscore(slopes1, slope)
+
+np.max(trends) # +5.2 days
+np.min(trends) # -3.6 days
+np.size(np.where(pval_percs > 90))
+
+# compute trends for all 40 ensemble members (historical)
+
+proj = all_counts[:,:84]
+
+trends = np.empty(40)
+pval_percs = np.empty(40)
+for k in range(40):
+    x = np.arange(84)
+    y = proj[k,:]
+    intercept = stats.linregress(x,y)[1]
+    slope = stats.linregress(x,y)[0]
+    vals1 = []
+    for j in range(84):
+        intercept += slope
+        vals1.append(intercept)
+    trends[k] = slope*84
+    
+    x = np.arange(84)
+    slopes1 = np.empty(10000)
+    for i in range(10000):
+        run = np.random.permutation(y)
+        slopes1[i] = stats.linregress(x,run)[0]
+    pval_percs[k] = stats.percentileofscore(slopes1, slope)
+
+np.max(trends) # +3.3 days
+np.min(trends) # -5.2 days
+np.size(np.where(pval_percs > 90))
+
+# compute trend of observed counts
+x = np.arange(84)
+y = counts
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(84):
+    intercept += slope
+    vals1.append(intercept)
+slope*84 # -0.2 days
+
+# permutation test for statistical significance of trend
+x = np.arange(84)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p = 0.447
+
+# plot panel A
+
+fig = plt.figure(figsize=(8,6))
+ax = plt.axes()
+ax.set_facecolor("0.8")
+[plt.plot(all_counts[k,:],'-', color='k',alpha=0.3) for k in range(40)]
+plt.plot(counts,'-o', color='tab:purple', zorder=100)
+plt.plot(future_counts,'-', color='firebrick', zorder=100)
+plt.plot(hist_counts,'-', color='firebrick', zorder=100)
+plt.plot(trendline,'--', color='y', zorder=100)
+plt.plot(trendline_hist,'--', color='y', zorder=100)
+#plt.plot(trendline2,'--', color='y', zorder=100)
+#plt.plot(np.polyval(poly, x),'--', color='firebrick')
+#plt.grid(linewidth=0.5, color='0.5', alpha=0.5, linestyle='-.')
+plt.yticks(np.arange(0,40.1,5), fontsize=13)
+plt.xticks(np.arange(0,161,20), ('1940','1960','1980','2000','2020','2040',
+                                '2060','2080','2100'), fontsize = 13)
+plt.ylabel('Number of days', fontsize = 15)
+plt.title('Number of days with patterns similar to June 20, 2023', fontsize = 18)
+plt.axvline(x=84,linestyle='--', color='w', lw=2)
+plt.savefig('fig_4a.pdf',dpi=600)
+
+# re-plot this on extended y-axis to make legend
+fig = plt.figure(figsize=(8,6))
+ax = plt.axes()
+ax.set_facecolor("0.8")
+plt.plot(counts,'-o', color='tab:purple', zorder=100)
+plt.plot(future_counts,'-', color='firebrick', zorder=100)
+[plt.plot(all_counts[k,:],'-', color='k',alpha=0.3) for k in range(40)]
+#plt.plot(hist_counts,'-', color='firebrick', zorder=100)
+plt.yticks(np.arange(-100,101,20), fontsize=13)
+l = plt.legend(['Observed',
+            'Ensemble mean',
+            'Ensemble spread'], 
+            loc='lower right', fontsize=15)
+colors = ['tab:purple','firebrick','k']
+n = -1
+for text in l.get_texts():
+    n += 1
+    text.set_color(colors[n])
+plt.savefig('fig_4a_legend.pdf',dpi=600)
+
+# as above, but now plotting Tmax
+
+tmax_normed = np.load('tmax_normed_regridded.npy') 
+tmax_normed_domain = np.nanmean(tmax_normed,axis=1) # observed domain-average Tmax in actual units (Deg C), latitude normalized
+tmax_subs = np.where(mats==1,tmax_normed_domain,np.nan) # grab Tmax on days that had matched patterns
+splits2 = np.split(tmax_subs,84)
+splits_df = pd.DataFrame(splits2)
+
+# calculate Tmax means for each year on all matched pattern days
+meanvals = []
+for k in range(84):
+    meanvals.append(np.nanmean(splits_df.iloc[k,:]))
+meanvals = np.array(meanvals)
+
+all_meanvals = np.load('all_meanvals.npy')
+all_meanvals2 = np.nanmean(all_meanvals,axis=0)
+
+proj = all_meanvals[:,84:]
+means = np.nanmean(proj,axis=0)
+hist = all_meanvals[:,:84]
+means_hist = np.nanmean(hist,axis=0)
+
+blanks = np.empty(84)
+blanks[:] = np.nan
+all_counts2 = np.empty([40,161])
+for k in range(40):
+    ens = proj[k,:]
+    all_counts2[k,:] = np.hstack([blanks,ens])
+
+future_counts = np.hstack([blanks,means])
+
+blanks = np.empty(77)
+blanks[:] = np.nan
+all_counts2_hist = np.empty([40,161])
+for k in range(40):
+    ens = hist[k,:]
+    all_counts2_hist[k,:] = np.hstack([ens,blanks])
+
+hist_counts = np.hstack([means_hist,blanks])
+
+from scipy import stats
+
+# compute trend
+x = np.arange(77)
+y = all_meanvals2[84:]
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(77):
+    intercept += slope
+    vals1.append(intercept)
+slope*77 # +4.51C
+
+# permutation test for statistical significance of trend
+x = np.arange(77)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p < 0.0001
+
+blanks = np.empty(84)
+blanks[:] = np.nan
+
+vals1 = np.array(vals1)
+trendline = np.hstack([blanks,vals1])
+
+# compute trend of hist
+x = np.arange(84)
+y = all_meanvals2[:84]
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(84):
+    intercept += slope
+    vals1.append(intercept)
+slope*84 # +1.16C
+
+# permutation test for statistical significance of trend
+x = np.arange(84)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p < 0.0001
+
+blanks = np.empty(77)
+blanks[:] = np.nan
+
+vals1 = np.array(vals1)
+trendline_hist = np.hstack([vals1,blanks])
+
+# compute trends for all 40 ensemble members (future)
+
+proj = all_meanvals[:,84:]
+
+trends = np.empty(40)
+pval_percs = np.empty(40)
+for k in range(40):
+    y = proj[k,:]
+    y = y[~np.isnan(y)]
+    x = np.arange(len(y)) # set x to be same length as y
+    intercept = stats.linregress(x,y)[1]
+    slope = stats.linregress(x,y)[0]
+    vals1 = []
+    for j in range(len(y)):
+        intercept += slope
+        vals1.append(intercept)
+    trends[k] = slope*(len(y))
+    
+    x = np.arange(len(y))
+    slopes1 = np.empty(10000)
+    for i in range(10000):
+        run = np.random.permutation(y)
+        slopes1[i] = stats.linregress(x,run)[0]
+    pval_percs[k] = stats.percentileofscore(slopes1, slope)
+
+np.max(trends) # +5.69C
+np.min(trends) # +3.03C
+np.size(np.where(pval_percs > 90))
+
+# compute trends for all 40 ensemble members (historical)
+
+proj = all_meanvals[:,:84]
+
+trends = np.empty(40)
+pval_percs = np.empty(40)
+for k in range(40):
+    y = proj[k,:]
+    y = y[~np.isnan(y)]
+    x = np.arange(len(y)) # set x to be same length as y
+    intercept = stats.linregress(x,y)[1]
+    slope = stats.linregress(x,y)[0]
+    vals1 = []
+    for j in range(len(y)):
+        intercept += slope
+        vals1.append(intercept)
+    trends[k] = slope*(len(y))
+    
+    x = np.arange(len(y))
+    slopes1 = np.empty(10000)
+    for i in range(10000):
+        run = np.random.permutation(y)
+        slopes1[i] = stats.linregress(x,run)[0]
+    pval_percs[k] = stats.percentileofscore(slopes1, slope)
+
+np.max(trends) # +2.68C
+np.min(trends) # -0.50C
+np.size(np.where(pval_percs > 90))
+
+# compute trend of observed tmax
+y = meanvals
+y = y[~np.isnan(y)]
+x = np.arange(len(y))
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(len(y)):
+    intercept += slope
+    vals1.append(intercept)
+slope*(len(y)) # +1.25C
+
+# permutation test for statistical significance of trend
+x = np.arange(len(y))
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p = 0.008
+
+# plot panel B
+
+fig = plt.figure(figsize=(8,6))
+ax = plt.axes()
+ax.set_facecolor("0.8")
+[plt.plot(all_meanvals[k,:],'-', color='k',alpha=0.3) for k in range(40)]
+plt.plot(meanvals,'o', color='tab:purple', zorder=100) # instead of counts
+plt.plot(future_counts,'-', color='firebrick', zorder=100)
+plt.plot(hist_counts,'-', color='firebrick', zorder=100)
+plt.plot(trendline,'--', color='y', zorder=100)
+plt.plot(trendline_hist,'--', color='y', zorder=100)
+#plt.plot(trendline2,'--', color='y', zorder=100)
+#plt.plot(np.polyval(poly, x),'--', color='firebrick')
+#plt.grid(linewidth=0.5, color='0.5', alpha=0.5, linestyle='-.')
+plt.yticks(np.arange(20,45.1,5), fontsize=13)
+plt.xticks(np.arange(0,161,20), ('1940','1960','1980','2000','2020','2040',
+                                '2060','2080','2100'), fontsize = 13)
+plt.ylabel('Domain-averaged Tmax ($^\circ$C)', fontsize = 15)
+plt.title('Domain-averaged Tmax during matched patterns', fontsize = 18)
+plt.axvline(x=84,linestyle='--', color='w', lw=2)
+plt.savefig('fig_4b.pdf',dpi=600)
+
+# as above, but now plotting SM
+
+sm_z_normed2 = np.load('sm_z_normed2_regridded.npy')
+sm_subs = np.where(mats==1,sm_z_normed2,np.nan) # grab Tmax on days that had matched patterns
+splits2 = np.split(sm_subs,84)
+splits_df = pd.DataFrame(splits2)
+
+# calculate Tmax means for each year on all matched pattern days
+meanvals = []
+for k in range(84):
+    meanvals.append(np.nanmean(splits_df.iloc[k,:]))
+meanvals = np.array(meanvals)
+
+all_meanvals = np.load('all_meanvals_sm.npy')
+all_meanvals2 = np.nanmean(all_meanvals,axis=0)
+
+proj = all_meanvals[:,84:]
+means = np.nanmean(proj,axis=0)
+hist = all_meanvals[:,:84]
+means_hist = np.nanmean(hist,axis=0)
+
+blanks = np.empty(84)
+blanks[:] = np.nan
+all_counts2 = np.empty([40,161])
+for k in range(40):
+    ens = proj[k,:]
+    all_counts2[k,:] = np.hstack([blanks,ens])
+
+future_counts = np.hstack([blanks,means])
+
+blanks = np.empty(77)
+blanks[:] = np.nan
+all_counts2_hist = np.empty([40,161])
+for k in range(40):
+    ens = hist[k,:]
+    all_counts2_hist[k,:] = np.hstack([ens,blanks])
+
+hist_counts = np.hstack([means_hist,blanks])
+
+from scipy import stats
+
+# compute trend
+x = np.arange(77)
+y = all_meanvals2[84:]
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(77):
+    intercept += slope
+    vals1.append(intercept)
+slope*77 # -0.45 sd
+
+# permutation test for statistical significance of trend
+x = np.arange(77)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p < 0.0001
+
+blanks = np.empty(84)
+blanks[:] = np.nan
+
+vals1 = np.array(vals1)
+trendline = np.hstack([blanks,vals1])
+
+# compute trend of hist
+x = np.arange(84)
+y = all_meanvals2[:84]
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(84):
+    intercept += slope
+    vals1.append(intercept)
+slope*84 # -0.35 sd
+
+# permutation test for statistical significance of trend
+x = np.arange(84)
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p < 0.0001
+
+blanks = np.empty(77)
+blanks[:] = np.nan
+
+vals1 = np.array(vals1)
+trendline_hist = np.hstack([vals1,blanks])
+
+# compute trends for all 40 ensemble members (future)
+
+proj = all_meanvals[:,84:]
+
+trends = np.empty(40)
+pval_percs = np.empty(40)
+for k in range(40):
+    y = proj[k,:]
+    y = y[~np.isnan(y)]
+    x = np.arange(len(y)) # set x to be same length as y
+    intercept = stats.linregress(x,y)[1]
+    slope = stats.linregress(x,y)[0]
+    vals1 = []
+    for j in range(len(y)):
+        intercept += slope
+        vals1.append(intercept)
+    trends[k] = slope*(len(y))
+    
+    x = np.arange(len(y))
+    slopes1 = np.empty(10000)
+    for i in range(10000):
+        run = np.random.permutation(y)
+        slopes1[i] = stats.linregress(x,run)[0]
+    pval_percs[k] = stats.percentileofscore(slopes1, slope)
+
+np.max(trends) # +0.02 sd
+np.min(trends) # -1.35 sd
+np.size(np.where(pval_percs > 90))
+
+# compute trends for all 40 ensemble members (historical)
+
+proj = all_meanvals[:,:84]
+
+trends = np.empty(40)
+pval_percs = np.empty(40)
+for k in range(40):
+    y = proj[k,:]
+    y = y[~np.isnan(y)]
+    x = np.arange(len(y)) # set x to be same length as y
+    intercept = stats.linregress(x,y)[1]
+    slope = stats.linregress(x,y)[0]
+    vals1 = []
+    for j in range(len(y)):
+        intercept += slope
+        vals1.append(intercept)
+    trends[k] = slope*(len(y))
+    
+    x = np.arange(len(y))
+    slopes1 = np.empty(10000)
+    for i in range(10000):
+        run = np.random.permutation(y)
+        slopes1[i] = stats.linregress(x,run)[0]
+    pval_percs[k] = stats.percentileofscore(slopes1, slope)
+
+np.max(trends) # +0.45 sd
+np.min(trends) # -1.06 sd
+np.size(np.where(pval_percs > 90))
+
+# compute trend of observed sm
+y = meanvals
+y = y[~np.isnan(y)]
+x = np.arange(len(y))
+intercept = stats.linregress(x,y)[1]
+slope = stats.linregress(x,y)[0]
+vals1 = []
+for j in range(len(y)):
+    intercept += slope
+    vals1.append(intercept)
+slope*(len(y)) # -0.11 sd
+
+# permutation test for statistical significance of trend
+x = np.arange(len(y))
+slopes1 = np.empty(10000)
+for k in range(10000):
+    run = np.random.permutation(y)
+    slopes1[k] = stats.linregress(x,run)[0]
+slope_perm = stats.percentileofscore(slopes1, slope) # p = 0.358
+
+# plot panel C
+
+fig = plt.figure(figsize=(8,6))
+ax = plt.axes()
+ax.set_facecolor("0.8")
+[plt.plot(all_meanvals[k,:],'-', color='k',alpha=0.3) for k in range(40)]
+plt.plot(meanvals,'o', color='tab:purple', zorder=100) # instead of counts
+plt.plot(future_counts,'-', color='firebrick', zorder=100)
+plt.plot(hist_counts,'-', color='firebrick', zorder=100)
+plt.plot(trendline,'--', color='y', zorder=100)
+plt.plot(trendline_hist,'--', color='y', zorder=100)
+#plt.plot(trendline2,'--', color='y', zorder=100)
+#plt.plot(np.polyval(poly, x),'--', color='firebrick')
+#plt.grid(linewidth=0.5, color='0.5', alpha=0.5, linestyle='-.')
+plt.yticks(np.arange(-4,4.01,1), fontsize=13)
+plt.xticks(np.arange(0,161,20), ('1940','1960','1980','2000','2020','2040',
+                                '2060','2080','2100'), fontsize = 13)
+plt.ylabel('Domain-averaged soil moisture sd', fontsize = 15)
+plt.title('Domain-averaged soil moisture during matched patterns', fontsize = 18)
+plt.axvline(x=84,linestyle='--', color='w', lw=2)
+plt.savefig('fig_4c.pdf',dpi=600)
+
+# boxplots (panels D-F)
+
+year_idxs = pd.DataFrame({'idx':np.arange(161),
+                          'year':np.arange(1940,2100.1,1)})
+year_idxs[year_idxs.year == 2040].index.values
+year_idxs[year_idxs.year == 2060].index.values
+
+hist = all_counts[:,60:81]
+hist = hist.flatten()
+
+proj = all_counts[:,100:121]
+proj = proj.flatten()
+
+np.median(hist)
+np.median(proj)
+
+fig = plt.figure(figsize=(5,5))
+bp = plt.boxplot([hist,proj], widths = 0.5,
+             whis = [10,90], sym = '*', showfliers = True,
+             medianprops = {'color': 'k'})
+#[bp['boxes'][k].set(color='r') for k in range(2)]
+# plt.xticks(np.arange(1,8,1), ('0-0.1','0.1-0.2','0.2-0.3',
+#                               '0.3-0.4','0.4-0.5','0.5-0.6','0.6-0.73'), fontsize = 13)
+plt.xticks(np.arange(1,3,1), (' Historical \n (2000-2020)','  Projections \n (2040-2060)'), 
+           fontsize = 15)
+plt.yticks(np.arange(0,30.1,5), fontsize=15)
+plt.ylim(top=30)
+plt.ylim(bottom=-1)
+plt.ylabel('Number of days', fontsize = 15)
+plt.title('Number of days with patterns \n similar to June 20, 2023', fontsize = 18)
+plt.savefig('fig_4d.pdf',dpi=600)
+
+all_meanvals = np.load('all_meanvals.npy')
+
+hist = all_meanvals[:,60:81] 
+hist = hist.flatten()
+
+proj = all_meanvals[:,100:121]
+proj = proj.flatten()
+
+hist = hist[~np.isnan(hist)]
+proj = proj[~np.isnan(proj)]
+
+np.median(hist)
+np.median(proj)
+
+np.percentile(proj,75)
+np.percentile(proj,25)
+
+fig = plt.figure(figsize=(5,5))
+bp = plt.boxplot([hist,proj], widths = 0.5,
+             whis = [10,90], sym = '*', showfliers = True,
+             medianprops = {'color': 'k'})
+#[bp['boxes'][k].set(color='r') for k in range(2)]
+# plt.xticks(np.arange(1,8,1), ('0-0.1','0.1-0.2','0.2-0.3',
+#                               '0.3-0.4','0.4-0.5','0.5-0.6','0.6-0.73'), fontsize = 13)
+plt.xticks(np.arange(1,3,1), (' Historical \n (2000-2020)','  Projections \n (2040-2060)'), 
+           fontsize = 15)
+plt.yticks(np.arange(24,42.1,2), fontsize=15)
+plt.ylim(top=42)
+plt.ylim(bottom=24)
+plt.ylabel('Domain-averaged Tmax ($^\circ$C)', fontsize = 15)
+plt.title('Domain-averaged Tmax \n during matched patterns', fontsize = 18)
+plt.savefig('fig_4e.pdf',dpi=600)
+
+all_meanvals = np.load('all_meanvals_sm.npy')
+
+hist = all_meanvals[:,60:81]
+hist = hist.flatten()
+
+proj = all_meanvals[:,100:121]
+proj = proj.flatten()
+
+hist = hist[~np.isnan(hist)]
+proj = proj[~np.isnan(proj)]
+
+np.median(hist)
+np.median(proj)
+
+fig = plt.figure(figsize=(5,5))
+bp = plt.boxplot([hist,proj], widths = 0.5,
+             whis = [10,90], sym = '*', showfliers = True,
+             medianprops = {'color': 'k'})
+#[bp['boxes'][k].set(color='r') for k in range(2)]
+# plt.xticks(np.arange(1,8,1), ('0-0.1','0.1-0.2','0.2-0.3',
+#                               '0.3-0.4','0.4-0.5','0.5-0.6','0.6-0.73'), fontsize = 13)
+plt.xticks(np.arange(1,3,1), (' Historical \n (2000-2020)','  Projections \n (2040-2060)'), 
+           fontsize = 15)
+plt.yticks(np.arange(-3,4.01,1), fontsize=15)
+plt.ylim(top=4)
+plt.ylim(bottom=-3)
+plt.ylabel('Domain-averaged soil moisture sd', fontsize = 15)
+plt.title('Domain-averaged soil moisture \n during matched patterns', fontsize = 18)
+plt.savefig('fig_4f.pdf',dpi=600)
+
+# building on the workflow above - separating out dry and wet SM conditions
+# for matched patterns in CESM2 for both hist and proj 
+
+all_meanvals = np.load('all_meanvals.npy')
+
+hist = all_meanvals[:,60:81] 
+hist = hist.flatten()
+
+proj = all_meanvals[:,100:121]
+proj = proj.flatten()
+
+all_meanvals_sm = np.load('all_meanvals_sm.npy')
+
+hist_sm = all_meanvals_sm[:,60:81]
+hist_sm = hist_sm.flatten()
+
+proj_sm = all_meanvals_sm[:,100:121]
+proj_sm = proj_sm.flatten()
+
+# calculate percentiles
+hist_sm = hist_sm[~np.isnan(hist_sm)]
+hist_sm_perc_90 = np.percentile(hist_sm,90)
+hist_sm_perc_10 = np.percentile(hist_sm,10)
+hist_sm_perc_66 = np.percentile(hist_sm,66)
+hist_sm_perc_33 = np.percentile(hist_sm,33)
+hist_sm_perc_75 = np.percentile(hist_sm,75)
+hist_sm_perc_25 = np.percentile(hist_sm,25)
+
+proj_sm = proj_sm[~np.isnan(proj_sm)]
+proj_sm_perc_90 = np.percentile(proj_sm,90)
+proj_sm_perc_10 = np.percentile(proj_sm,10)
+proj_sm_perc_66 = np.percentile(proj_sm,66)
+proj_sm_perc_33 = np.percentile(proj_sm,33)
+proj_sm_perc_75 = np.percentile(proj_sm,75)
+proj_sm_perc_25 = np.percentile(proj_sm,25)
+
+# rerun hist and proj SM to re-introduce nan's so that length is 840 again
+hist_sm = all_meanvals_sm[:,60:81]
+hist_sm = hist_sm.flatten()
+
+proj_sm = all_meanvals_sm[:,100:121]
+proj_sm = proj_sm.flatten()
+
+hist_pos = hist[hist_sm > 0]
+hist_neg = hist[hist_sm < 0]
+hist_pos_90 = hist[hist_sm > hist_sm_perc_90]
+hist_neg_10 = hist[hist_sm < hist_sm_perc_10]
+hist_pos_66 = hist[hist_sm > hist_sm_perc_66]
+hist_neg_33 = hist[hist_sm < hist_sm_perc_33]
+hist_pos_75 = hist[hist_sm > hist_sm_perc_75]
+hist_neg_25 = hist[hist_sm < hist_sm_perc_25]
+
+proj_pos = proj[proj_sm > 0]
+proj_neg = proj[proj_sm < 0]
+proj_pos_90 = proj[proj_sm > proj_sm_perc_90]
+proj_neg_10 = proj[proj_sm < proj_sm_perc_10]
+proj_pos_66 = proj[proj_sm > proj_sm_perc_66]
+proj_neg_33 = proj[proj_sm < proj_sm_perc_33]
+proj_pos_75 = proj[proj_sm > proj_sm_perc_75]
+proj_neg_25 = proj[proj_sm < proj_sm_perc_25]
+
+np.nanmedian(hist_pos)
+np.nanmedian(hist_neg)
+np.nanmedian(proj_pos)
+np.nanmedian(proj_neg)
+np.nanmedian(hist_pos_66)
+np.nanmedian(hist_neg_33)
+np.nanmedian(proj_pos_66)
+np.nanmedian(proj_neg_33)
+np.nanmedian(hist_pos_75)
+np.nanmedian(hist_neg_25)
+np.nanmedian(proj_pos_75)
+np.nanmedian(proj_neg_25)
+np.nanmedian(hist_pos_90)
+np.nanmedian(hist_neg_10)
+np.nanmedian(proj_pos_90)
+np.nanmedian(proj_neg_10)
+
+# boxplots for panel H inset
+
+fig = plt.figure(figsize=(5,5))
+bp = plt.boxplot([hist_pos_66,hist_neg_33], positions = [0.75, 1.25], widths = 0.5,
+             whis = [10,90], sym = '*', showfliers = True, patch_artist=True,
+             medianprops = {'color': 'k'})
+bp['boxes'][0].set(facecolor='#bae4b3')
+bp['boxes'][1].set(facecolor='#a2836e')
+bp = plt.boxplot([proj_pos_66,proj_neg_33], positions = [2.25, 2.75], widths = 0.5,
+             whis = [10,90], sym = '*', showfliers = True, patch_artist=True,
+             medianprops = {'color': 'k'})
+bp['boxes'][0].set(facecolor='#bae4b3')
+bp['boxes'][1].set(facecolor='#a2836e')
+plt.xticks([1,2.5], (' Historical \n (2000-2020)','  Projections \n (2040-2060)'), 
+           fontsize = 15)
+# plt.xticks(np.arange(1,5,1), (' Historical Wet \n (2000-2020)',' Historical Dry \n (2000-2020)',
+#                               ' Projected Wet \n (2040-2060)',' Projected Dry \n (2040-2060)'), 
+#            fontsize = 15)
+plt.yticks(np.arange(26,40.1,2), fontsize=15)
+plt.ylim(top=40.5)
+plt.ylim(bottom=25.5)
+plt.ylabel('Domain-averaged Tmax ($^\circ$C)', fontsize = 15)
+plt.title('Domain-averaged Tmax \n during matched patterns', fontsize = 18)
+plt.legend(['Wet SM (>66th perc)','_nolegend_','_nolegend_','_nolegend_',
+            '_nolegend_','_nolegend_','_nolegend_',
+            'Dry SM (<33rd perc)'], loc='upper left')
+plt.savefig('fig_4h_inset.pdf',dpi=600)
+
+# Panel I - hottest projected day
+
+all_meanvals_daily = np.load('all_meanvals_daily.npy')
+all_meanvals_daily = all_meanvals_daily[:,100:121,:] # subset to 2040-2060
+np.nanmax(all_meanvals_daily) # 40.4C 
+np.where(all_meanvals_daily==np.nanmax(all_meanvals_daily))
+# index is 20,19,84
+
+tmax = np.load('all_tmax_daily_patterns_2040_2060.npy')
+
+# ensemble member 21, on June 24, 2058
+max_tmax = tmax[20,19,84,:]
+var = np.reshape(max_tmax,(25,26))
+
+lat = np.load('cesm_lats_mxtx.npy')
+lon = np.load('cesm_lons_mxtx.npy')
+lon, lat = np.meshgrid(lon, lat)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('YlOrRd',11))
+#plt.colorbar(ticks=np.arange(30,52.1,2))
+plt.title('Tmax on hottest projected day (CESM2; 2040-2060)',size=19) # 2058
+plt.clim(30,52)
+plt.savefig('fig_4i.pdf',dpi=600)
+
+# plot panel H
+
+# get average across all matched patterns during 2040-2060
+reshaped = np.reshape(tmax,(153720,650))
+avg = np.nanmean(reshaped,axis=0)
+
+all_pattern_mean = np.nanmean(all_meanvals_daily)
+
+var = np.reshape(avg,(25,26))
+
+lat = np.load('cesm_lats_mxtx.npy')
+lon = np.load('cesm_lons_mxtx.npy')
+lon, lat = np.meshgrid(lon, lat)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('YlOrRd',11))
+#plt.colorbar(ticks=np.arange(30,52.1,2))
+plt.title('Tmax on matched patterns (CESM2; 2040-2060)',size=19)
+plt.clim(30,52)
+plt.savefig('fig_4h.pdf',dpi=600)
+
+# plot panel G
+
+# as above, but for 2000-2020
+
+tmax = np.load('all_tmax_daily_patterns_2000_2020.npy')
+
+# get average across all matched patterns during 2040-2060
+reshaped = np.reshape(tmax,(153720,650))
+avg = np.nanmean(reshaped,axis=0)
+
+all_pattern_mean = np.nanmean(all_meanvals_daily)
+
+var = np.reshape(avg,(25,26))
+
+lat = np.load('cesm_lats_mxtx.npy')
+lon = np.load('cesm_lons_mxtx.npy')
+lon, lat = np.meshgrid(lon, lat)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('YlOrRd',11))
+#plt.colorbar(ticks=np.arange(30,52.1,2))
+plt.title('Tmax on matched patterns (CESM2; 2000-2020)',size=19)
+plt.clim(30,52)
+plt.savefig('fig_4g.pdf',dpi=600)
