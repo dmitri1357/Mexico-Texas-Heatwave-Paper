@@ -66,7 +66,7 @@ daily_max2 = np.array(daily_max2) * -1
 
 ds = xr.open_dataset('z500_z_normed.nc')
 z500_z_normed = ds.z500_detrended.values # domain-averaged, detrended Z500 standardized anomalies
-z500_z_normed = np.reshape(z500_z_normed,(15372,11392)
+z500_z_normed = np.reshape(z500_z_normed,(15372,11392))
 valss = np.nanmean(z500_z_normed,axis=1)
 
 dates = pd.date_range(start='1/1/1940', end='12/31/2023')
