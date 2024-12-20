@@ -306,7 +306,7 @@ anoms_mlr_upper2 = pred_deg_C_upper_mlr2-averages
 anoms_trend_added_mlr_lower2 = preds_trend_added_mlr_lower2-averages
 anoms_trend_added_mlr_upper2 = preds_trend_added_mlr_upper2-averages
 
-# plot fig 3a
+# plot Fig S7 - actual Tmax predictions
 
 fig, ax1 = plt.subplots(figsize=(8,6))
 
@@ -363,7 +363,7 @@ dates = pd.date_range(start='6/15/2023', end='6/28/2023')
 df_3b.set_index(dates,inplace=True)
 df_3b = np.round(df_3b,2)
 
-# plot fig 3b
+# plot fig 3 - Tmax anomalies
 
 fig, ax1 = plt.subplots(figsize=(8, 6))
 
