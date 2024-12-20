@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import xarray as xr
+import pandas as pd
+from statsmodels.tsa.stattools import grangercausalitytests
+
+ds = xr.open_dataset('tmax_z_normed2.nc')
+tmax = ds.tmax_z.values # domain-averaged Tmax standardized anomalies
+
+ds = xr.open_dataset('sm_z_normed2.nc')
+sm = ds.sm.values # domain-averaged SM standardized anomalies
+
+# Create a DataFrame from tmax and sm
+data = pd.DataFrame({'tmax': tmax, 'sm': sm})
+
+# Granger causality test
+# Test whether SM can predict tmax
+# maxlag defines the maximum number of lags to test
+max_lag = 7  # Use 7 lags as in your previous analysis
+results = grangercausalitytests(data[['tmax', 'sm']], max_lag, verbose=True)
+
+# Test whether tmax can predict SM
+results_inverse = grangercausalitytests(data[['sm', 'tmax']], max_lag, verbose=True)
+
+# Stationarity Check: Granger causality assumes stationary time series. 
+# Use the Augmented Dickey-Fuller (ADF) test to verify:
+
+from statsmodels.tsa.stattools import adfuller
+
+adf_tmax = adfuller(tmax)
+adf_sm = adfuller(sm)
