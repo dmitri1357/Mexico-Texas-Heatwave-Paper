@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+'''
+Since this data was downloaded in November 2023, only partial data was available for this year. There are also two different experiment versions from ERA5 that need to be 
+spliced together, the preliminary and final data. I therefore wrote a different script to process 2023 data separately from the 1940-2022 data.
+The output is a Numpy array of Z500 data covering January 1 - September 30, 2023. 
+'''
+
+from netCDF4 import Dataset
+import numpy as np
+
+dataset = Dataset('z500_2023.nc')
+dataset.variables
+z = np.squeeze(np.array(dataset.variables['z'])) # data through 9/30 (6552 hours)
+z = np.where(z==-32767,np.nan,z)
+
+z1 = z[:5832,0,:] # handle the different experiment versions in ERA5 - preliminary and final
+z2 = z[5832:,1,:] # handle the different experiment versions in ERA5 - preliminary and final
+z500 = np.concatenate([z1,z2],axis=0)
+
+zvec = np.reshape(z500,(6552,32361))
+
+idx1 = np.arange(0,6552,24)
+z500 = np.empty([273,32361])
+for k in range(32361):
+    cell = zvec[:,k]
+    for j in range(273):
+        chunk = cell[idx1[j]:idx1[j]+24]
+        z500[j,k] = np.nanmean(chunk)
+
+blank_after_sep30 = np.empty([92,32361])
+blank_after_sep30[:] = np.nan
+z500 = np.concatenate([z500,blank_after_sep30],axis=0)
+
+np.save('z500_2023',np.reshape(z500,(365,161,201)))
