@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import pandas as pd
+
+# first, calculate z500 trendlines at each latitude for April-Sep
+z500_global = np.load('z500_global_all.npy')
+
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+idx = dates.index.values
+
+arr2 = z500_global[idx,:]
+
+z500_trendlines = np.empty([161,84])
+for k in range(161):
+    this_lat = arr2[:,k,:]
+    splits = np.split(this_lat,84,axis=0)
+    avgs = [np.mean(splits[j]) for j in range(84)]
+    vals1 = []
+    for i in range(84):
+        if i == 0:
+            vals1.append(0)
+        else:
+            vals1.append(avgs[i]-avgs[0])
+    z500_trendlines[k,:] = vals1
+
+np.save('z500_trendlines',z500_trendlines)
