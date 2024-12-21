@@ -183,7 +183,7 @@ plt.title('Standardized, detrended Z500 anomalies during June 15-28, 2023', size
 #cb = plt.colorbar(ticks=np.arange(-3,3.01,0.5), orientation='horizontal', aspect=45)
 #cb.ax.tick_params(labelsize=15)
 plt.clim(-3,3)
-m.readshapefile('circulation_bbox',name='null',color='k',linewidth=2) # this is the shapefile of the rectangle used for analog matching
+
 
 
 
