@@ -57,7 +57,7 @@ min_lat = 13 # selecting this so I can capture the 13.66-14.61 lat band
 max_lon = 273.75 # -86.25
 max_lat = 38 # selecting this so I can capture the 36.28-37.23 lat band
 
-for m in range(40):
+for m in range(40): # loop through the 40 ensemble members
     all_files = os.listdir()
     files = []
     for file in all_files:
