@@ -12,10 +12,10 @@ all_corrs = np.load('all_corrs_cesm2.npy')
 
 num_years = 161
 
-all_counts = np.empty([40,num_years])
-all_meanvals = np.empty([40,num_years])
-all_meanvals_sm = np.empty([40,num_years])
-for m in range(40):
+all_counts = np.empty([40,num_years]) # pattern frequency
+all_meanvals = np.empty([40,num_years]) # tmax on pattern days
+all_meanvals_sm = np.empty([40,num_years]) # sm on pattern days
+for m in range(40): # loop through the 40 ensemble members
     this_member = all_corrs[m,:] # matches for just June 20, 2023
     mats = np.zeros(29463)
     for j in range(29463):
