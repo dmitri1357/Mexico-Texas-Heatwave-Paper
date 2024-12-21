@@ -92,8 +92,8 @@ for k in range(30):
 fig = plt.figure(figsize=(8,6))
 plt.plot(vals2,'-o', color='orangered')
 plt.plot(daily_max,'--', color='orangered', lw=1)
-plt.plot(valz2,'-o', color='tab:brown')
-plt.plot(daily_max2,'--', color='tab:brown', lw=1)
+plt.plot(valz2,'-o', color='#d9ad7c')
+plt.plot(daily_max2,'--', color='#d9ad7c', lw=1)
 plt.plot(valss2,'-o', color='k')
 plt.plot(daily_max3,'--', color='k', lw=1)
 plt.scatter(19,vals2[19],marker='*',c='w',edgecolor='k',s=300)
@@ -108,39 +108,7 @@ plt.axhline(y=0,color='0.5',linestyle='--')
 plt.axvline(x=14,color='0.5',linestyle='--')
 plt.axvline(x=27,color='0.5',linestyle='--')
 plt.ylabel('Standardized anomaly', fontsize = 18)
-
-# re-plot this on extended y-axis to make legend
-fig = plt.figure(figsize=(8,6))
-#plt.plot(vals1,'--', color='tab:brown')
-plt.plot(vals2,'-o', color='orangered')
-plt.plot(daily_max,'--', color='orangered', lw=1)
-plt.plot(valz2,'-o', color='tab:brown')
-plt.plot(daily_max2,'--', color='tab:brown', lw=1)
-plt.plot(valss2,'-o', color='k')
-plt.plot(daily_max3,'--', color='k', lw=1)
-plt.yticks(np.arange(-5,4.01,0.5), fontsize=13)
-l = plt.legend(['June 2023 Tmax',
-            '1940-2022 Tmax daily records',
-            'June 2023 SM (negative)',
-            '1940-2022 SM daily records (negative)',
-            'June 2023 Z500 z-score',
-            '1940-2022 Z500 z-score daily records'], 
-            loc='lower right', fontsize=15)
-for text in l.get_texts():
-    s = str(text)
-    print(s)
-    if s[26] == '\'':
-        text.set_color('orangered')
-    elif s[27] == 'd':
-        text.set_color('orangered')
-    elif s[25] == '(':
-        text.set_color('tab:brown')
-    elif s[25] == 'd':
-        text.set_color('tab:brown')
-    elif s[34] == '\'':
-        text.set_color('k')
-    elif s[35] == 'd':
-        text.set_color('k')
+plt.savefig('fig_2a.pdf',dpi=600)
 
 # Fig 2b
 
