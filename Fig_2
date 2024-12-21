@@ -161,7 +161,7 @@ m.readshapefile('texas_mexico',name='null',color='b',linewidth=2)
 
 ds = xr.open_dataset('z500_z_detrended.nc')
 zvec = ds.z500.values # detrended Z500 z-scores 
-zvec = np.reshape(zvec,(15372,11392)
+zvec = np.reshape(zvec,(15372,11392))
 
 var = zvec[15264:15278,:] # date index (0 to 15371) represents all days between April-September, 1940-2023
 var = np.nanmean(var,axis=0)
