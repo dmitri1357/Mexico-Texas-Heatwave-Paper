@@ -88,7 +88,7 @@ tmax_amjjas2 = tmax_subset.astype('float32')
 
 # latitude-normalize 
 
-area_vec = np.load('area_vec.npy')
+area_vec = np.load('area_vec.npy') # this contains areas of each grid cell in sq km, for area-weighting
 
 tvec = np.reshape(tmax_amjjas2,(30660,11392))
 
