@@ -10,13 +10,14 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib as mpl
 mpl.rc('font',family='Arial')
 
-# detrending tmax the new way (during peer review)
+# detrending tmax the new way (during peer review) by removing the global-average timeseries from Berkeley Earth
 
 tmax = np.load('tmax_1940_2022.npy')
 tmax_2023 = np.load('tmax_2023.npy')
 
 # naming it z500 to be consistent with the rest of the code below
 # which was copied over from the Z500 code
+# not a best practice, but this was convenient and ensured the code would run exactly the same way
 z500 = np.concatenate([tmax,tmax_2023],axis=0)
 
 dates = pd.date_range(start='1/1/1940', end='12/31/2023')
@@ -28,7 +29,7 @@ idx = dates.index.values
 
 z500 = z500[idx,:,:]
 
-var = z500[15269,:]
+var = z500[15269,:] # day 15269 is 6/20/2023
 var = np.flipud(var)
 lat = np.arange(5,45.01,0.25)
 lon = np.arange(-125,-74.99,0.25)
@@ -58,7 +59,7 @@ for k in range(15372):
 zvec = np.reshape(z_flipped,(15372,11392))
 
 # latitude-normalize 
-area_vec = np.load('area_vec.npy')
+area_vec = np.load('area_vec.npy') # this contains areas of each grid cell in sq km for area-weighting
 
 z500_normed = np.empty([15372,11392])
 for k in range(15372):
@@ -72,7 +73,7 @@ ann_averages = [np.nanmean(split[k]) for k in range(84)]
 
 plt.plot(ann_averages)
 
-berk_temps = np.load('berk_temps.npy')
+berk_temps = np.load('berk_temps.npy') # load Berkeley Earth global temp. time series for detrending
 
 trendline = []
 for i in range(84):
@@ -84,11 +85,12 @@ plt.plot(trendline)
 
 np.save('tmax_trend_increments',trendline)
 
-# detrending Z500
+# detrending tmax
 tmax = np.load('tmax_1940_2022.npy')
 tmax_2023 = np.load('tmax_2023.npy')
 
 # naming it z500_all to be consistent with the rest of the code below
+# which was copied from the Z500 code
 z500_all = np.concatenate([tmax,tmax_2023],axis=0)
 
 z_reshape = np.reshape(z500_all,(84,365,161,201))
