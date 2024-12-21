@@ -38,11 +38,11 @@ for m in range(40): # loop through the 40 ensemble members
         meanvals.append(np.nanmean(splits_df.iloc[k,:]))
 
     sm_z_normed2 = np.load(f'sm_z_normed2_{m}.npy')
-    sm_subs = np.where(mats==1,sm_z_normed2,np.nan) # grab Tmax on days that had matched patterns
+    sm_subs = np.where(mats==1,sm_z_normed2,np.nan) # grab SM on days that had matched patterns
     splits2 = np.split(sm_subs,num_years)
     splits_df = pd.DataFrame(splits2)
 
-    # calculate Tmax means for each year on all matched pattern days
+    # calculate SM means for each year on all matched pattern days
     meanvals_sm = []
     for k in range(num_years):
         meanvals_sm.append(np.nanmean(splits_df.iloc[k,:]))
