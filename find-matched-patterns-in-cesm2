@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import pandas as pd
+
+all_corrs = np.load('all_corrs_cesm2.npy')
+
+num_years = 161
+num_days = 183
+num_cells = 650
+
+all_meanvals = np.empty([40,num_years,num_days,num_cells])
+for m in range(40):
+    this_member = all_corrs[m,:] # matches for just June 20, 2023
+    mats = np.zeros(29463)
+    for j in range(29463):
+        if this_member[j] > 0.8: # using 0.8 as the pattern correlation cutoff
+            mats[j] = 1
+
+    splits = np.split(mats,num_years)
+    counts = [np.nansum(splits[k]) for k in range(num_years)]
+
+    tmax = np.load(f'tmax_domain_cesm{m}.npy')
+
+    tmax_on_patterns = np.empty([29463,650])
+    for x in range(650):
+        cell = tmax[:,x]
+        tmax_on_patterns[:,x] = np.where(mats==1,cell,np.nan) # grab Tmax on days that had matched patterns
+
+    splits2 = np.reshape(tmax_on_patterns,(num_years,num_days,num_cells))
+
+    all_meanvals[m,:,:,:] = splits2 # 161 x 183 x 650 array for each ens. member
+
+np.save('all_tmax_daily_patterns',all_meanvals.astype('float32'))
