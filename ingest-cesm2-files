@@ -3,7 +3,7 @@
 '''
 This code shows how the Z500 files from the 40 CESM2 ensemble members (historical simulations) were ingested and processed into numpy arrays.
 The other variables (tmax, soil moisture) and the future projections files (2015-2100) were processed the same way.
-This is old code, I would recommend processing the files using xarray instead and outputting them as netcdf files.
+This is old code, I would recommend processing the files using xarray 'open_mfdataset' instead and outputting them as netcdf files.
 '''
 
 import xarray as xr
