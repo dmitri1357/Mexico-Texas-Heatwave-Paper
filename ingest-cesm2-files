@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+
+'''
+This code shows how the Z500 files from the 40 CESM2 ensemble members (historical simulations) were ingested and processed into numpy arrays.
+The other variables (tmax, soil moisture) and the future projections files (2015-2100) were processed the same way.
+This is old code, I would recommend processing the files using xarray instead and outputting them as netcdf files.
+'''
+
+import xarray as xr
+import numpy as np
+import os
+
+file_prefixes = ['b.e21.BHISTcmip6.f09_g17.LE2-1231.001',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.002',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.003',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.004',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.005',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.006',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.007',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.008',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.009',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1231.010',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.001',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.002',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.003',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.004',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.005',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.006',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.007',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.008',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.009',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1251.010',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.001',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.002',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.003',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.004',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.005',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.006',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.007',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.008',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.009',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1281.010',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.001',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.002',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.003',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.004',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.005',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.006',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.007',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.008',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.009',
+                 'b.e21.BHISTcmip6.f09_g17.LE2-1301.010']
+
+# specify bounding box 
+min_lon = 241.25 # -118.75
+min_lat = 13 # selecting this so I can capture the 13.66-14.61 lat band
+max_lon = 273.75 # -86.25
+max_lat = 38 # selecting this so I can capture the 36.28-37.23 lat band
+
+for m in range(40):
+    all_files = os.listdir()
+    files = []
+    for file in all_files:
+        if file.startswith(file_prefixes[m]):
+            files.append(file)
+
+    files.sort()
+
+    var_all = np.empty([0,26,27])
+    for k in range(len(files)):
+        ds = xr.open_dataset(files[k])
+        cropped_ds = ds.sel(lat=slice(min_lat,max_lat), lon=slice(min_lon,max_lon))
+        arr = cropped_ds.Z500.values
+        var_all = np.concatenate([var_all,arr],axis=0)
+
+    np.save(f'z500_hist{m}',var_all.astype('float32'))
