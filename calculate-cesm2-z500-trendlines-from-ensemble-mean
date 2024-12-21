@@ -24,7 +24,7 @@ splits = np.split(z500_lats,161,axis=0)
 z500_timeseries_lats = np.empty([161,26])
 for k in range(161):
     yr = splits[k]
-    yr_mean = np.mean(yr,axis=0) # avarage over 183 days in each year
+    yr_mean = np.mean(yr,axis=0) # average over 183 days in each year
     z500_timeseries_lats[k,:] = yr_mean
 
 trend_increments = np.empty([26,161])
