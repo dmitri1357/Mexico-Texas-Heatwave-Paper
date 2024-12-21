@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+'''
+This code extracts patterns from CESM2 that matched (>0.8 correlation) to June 20, 2023 and the annual-mean Tmax and soil moisture from those matched patterns
+This is done for all 40 ensemble members
+'''
+
+import numpy as np
+import pandas as pd
+
+all_corrs = np.load('all_corrs_cesm2.npy')
+
+num_years = 161
+
+all_counts = np.empty([40,num_years])
+all_meanvals = np.empty([40,num_years])
+all_meanvals_sm = np.empty([40,num_years])
+for m in range(40):
+    this_member = all_corrs[m,:] # matches for just June 20, 2023
+    mats = np.zeros(29463)
+    for j in range(29463):
+        if this_member[j] > 0.8: # using 0.8 as the pattern correlation cutoff
+            mats[j] = 1
+
+    splits = np.split(mats,num_years)
+    counts = [np.nansum(splits[k]) for k in range(num_years)]
+    all_counts[m,:] = counts
+
+    tmax_normed = np.load(f'tmax_normed_cesm{m}.npy')
+    tmax_normed_domain = np.nanmean(tmax_normed,axis=1) # observed domain-average Tmax in actual units (Deg C), latitude normalized
+    tmax_subs = np.where(mats==1,tmax_normed_domain,np.nan) # grab Tmax on days that had matched patterns
+    splits2 = np.split(tmax_subs,num_years)
+    splits_df = pd.DataFrame(splits2)
+
+    # calculate Tmax means for each year on all matched pattern days
+    meanvals = []
+    for k in range(num_years):
+        meanvals.append(np.nanmean(splits_df.iloc[k,:]))
+
+    sm_z_normed2 = np.load(f'sm_z_normed2_{m}.npy')
+    sm_subs = np.where(mats==1,sm_z_normed2,np.nan) # grab Tmax on days that had matched patterns
+    splits2 = np.split(sm_subs,num_years)
+    splits_df = pd.DataFrame(splits2)
+
+    # calculate Tmax means for each year on all matched pattern days
+    meanvals_sm = []
+    for k in range(num_years):
+        meanvals_sm.append(np.nanmean(splits_df.iloc[k,:]))
+
+    all_meanvals[m,:] = meanvals
+    all_meanvals_sm[m,:] = meanvals_sm
+
+np.save('all_counts',all_counts)
+np.save('all_meanvals',all_meanvals)
+np.save('all_meanvals_sm',all_meanvals_sm)
