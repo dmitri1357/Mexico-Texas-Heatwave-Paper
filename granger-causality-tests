@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# this creates Fig. S3
+
 import xarray as xr
 import pandas as pd
 from statsmodels.tsa.stattools import grangercausalitytests
