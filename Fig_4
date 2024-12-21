@@ -774,7 +774,7 @@ np.nanmedian(hist_neg_10)
 np.nanmedian(proj_pos_90)
 np.nanmedian(proj_neg_10)
 
-# boxplots for panel H inset
+# boxplots for Fig. S11 - comparing CESM2 Tmax for dry vs. wet soil moisture
 
 fig = plt.figure(figsize=(5,5))
 bp = plt.boxplot([hist_pos_66,hist_neg_33], positions = [0.75, 1.25], widths = 0.5,
