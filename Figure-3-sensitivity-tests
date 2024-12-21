@@ -292,7 +292,7 @@ for num in tqdm(num_analogues):
     june20_z500_sm_preds.append(df_3c.iloc[5,4]) # row 5 is 6/20/2023, column 4 is z500/SM pred
     june20_z500_sm_interaction_preds.append(df_3c.iloc[5,7]) # row 5 is 6/20/2023, column 7 is z500/SM/interaction pred
 
-# plot the results
+# plot the results - this is Fig. S6
 
 np.percentile(june20_z500_preds,25)
 np.percentile(june20_z500_preds,75)
