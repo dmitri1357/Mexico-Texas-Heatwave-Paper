@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import pandas as pd
+import sys
+
+c_idx = int(sys.argv[2])
+
+dates = pd.date_range(start='1/1/1940', end='12/31/2100')
+dates = dates[~((dates.month == 2) & (dates.day == 29))]
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+idx = dates.index.values
+
+z500_lats = np.empty([29463,26])
+ens = np.load(f'z500_global_fullperiod{c_idx}.npy')
+for j in range(26):
+    this_lat = ens[:,j,:] # loop through lats
+    this_lat = this_lat[idx,:] # subset to April-Sept
+    z500_lats[:,j] = np.mean(this_lat,axis=1)
+
+splits = np.split(z500_lats,161,axis=0)
+z500_timeseries_lats = np.empty([161,26])
+for k in range(161):
+    yr = splits[k]
+    yr_mean = np.mean(yr,axis=0) # avarage over 183 days in each year
+    z500_timeseries_lats[k,:] = yr_mean
+
+trend_increments = np.empty([26,161])
+for j in range(26):
+    timeseries = z500_timeseries_lats[:,j]
+    for k in range(161):
+        trend_increments[j,k] = timeseries[k]-timeseries[0]
+
+np.save(f'z500_trendlines{c_idx}',trend_increments)
