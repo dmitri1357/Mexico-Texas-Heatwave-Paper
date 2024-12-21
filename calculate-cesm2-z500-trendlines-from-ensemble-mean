@@ -4,6 +4,12 @@ import numpy as np
 import pandas as pd
 import sys
 
+'''
+This code calculates the long-term Z500 changes for each of the 40 CESM2 ensemble members.
+Executed as job array on HPC cluster, where each ensemble member was processed in parallel.
+In a later step, these 40 ensemble trends were averaged and the ensemble-average trend was removed from the CESM2 Z500 before pattern matching.
+'''
+
 c_idx = int(sys.argv[2])
 
 dates = pd.date_range(start='1/1/1940', end='12/31/2100')
