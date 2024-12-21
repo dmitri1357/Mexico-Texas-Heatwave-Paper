@@ -19,6 +19,7 @@ idx = dates.index.values
 
 arr2 = z500_global[idx,:]
 
+# output is 161 latitude increments (5-45°N at 0.25° resolution) and 84 timesteps (annual from 1940-2023, inclusive)
 z500_trendlines = np.empty([161,84])
 for k in range(161):
     this_lat = arr2[:,k,:]
