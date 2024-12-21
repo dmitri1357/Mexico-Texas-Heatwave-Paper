@@ -50,7 +50,7 @@ plt.colorbar()
 tvec = np.reshape(tmax,(161,201,30660))
 tmax_flipped = tvec
 
-raster_vec = np.load('raster_vec.npy')
+raster_vec = np.load('raster_vec.npy') # this file contains nan values for all grid cells outside the Mexico-Texas domain, for subsetting
 
 tmax_amjjas = np.reshape(tmax_flipped,(32361,30660))
 tmax_amjjas2 = np.empty([32361,30660])
