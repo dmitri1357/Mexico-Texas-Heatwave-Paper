@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import sys
 
+# processed as job array on HPC cluster, each script for one ensemble member in parallel
 c_idx = int(sys.argv[2])
 
 dates = pd.date_range(start='1/1/1940', end='12/31/2100')
