@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+from tqdm import tqdm
+import matplotlib.pyplot as plt   
+from mpl_toolkits.basemap import Basemap
+
+import matplotlib as mpl
+mpl.rc('font',family='Arial')
+
+### calculate domain-averaged SM z-scores (actual, not detrended)
+# reusing the same code from Tmax, so keeping variable names as tmax here even though it's SM
+
+sm_all = np.load('sm_all.npy')
+
+tmax = sm_all
+tmax = np.reshape(tmax,(30660,32361))
+tmax = np.swapaxes(tmax,1,0)
+
+# sanity check
+var = np.reshape(tmax,(161,201,30660))
+var = var[:,:,30465]
+#var = np.flipud(var)
+
+lat = np.arange(5,45.01,0.25)
+lon = np.arange(-125,-74.99,0.25)
+lon, lat = np.meshgrid(lon, lat)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('rainbow'))
+plt.colorbar()
+
+# # flip lats 
+# tvec = np.reshape(tmax,(161,201,30660))
+# tmax_flipped = np.empty([161,201,30660])
+# for k in range(30660):
+#     day = tvec[:,:,k]
+#     tmax_flipped[:,:,k] = np.flipud(day)
+
+# just using two lines from the commented-out code block above, since SM doesn't need to be flipped
+tvec = np.reshape(tmax,(161,201,30660))
+tmax_flipped = tvec
+
+raster_vec = np.load('raster_vec.npy')
+
+tmax_amjjas = np.reshape(tmax_flipped,(32361,30660))
+tmax_amjjas2 = np.empty([32361,30660])
+for k in tqdm(range(30660)):
+    day = tmax_amjjas[:,k]
+    tmax_amjjas2[:,k] = np.where(~np.isnan(raster_vec),day,raster_vec)
+    
+tmax_amjjas2 = np.swapaxes(tmax_amjjas2,1,0)
+
+tvec = np.reshape(tmax_amjjas2,(30660,161,201))
+
+# subset back to bbox to make smaller array
+tmax_subset = tvec[:,39:128,26:154]
+
+# map to make sure things look correct
+var = tmax_subset[30465,:]
+
+lat = np.arange(14.75,36.76,0.25)
+lon = np.arange(-118.5,-86.74,0.25)
+lon, lat = np.meshgrid(lon, lat)
+
+plt.figure(figsize=(10, 8))
+m = Basemap(projection='lcc', area_thresh=10000, resolution='l',
+            width=3.3E6, height=3.3E6,
+            lat_0=25, lon_0=-102)
+m.fillcontinents(color='white',lake_color='white',alpha=1,zorder=0)
+m.drawstates(linewidth=0.5,linestyle='solid',color='k')
+m.drawcountries(linewidth=0.5,linestyle='solid',color='k')
+m.drawcoastlines(color='black')
+m.pcolormesh(lon, lat, var, latlon=True, cmap=plt.cm.get_cmap('rainbow'))
+plt.colorbar()
+#plt.clim(-3,3)
+
+tmax_amjjas2 = tmax_subset.astype('float32')
+
+# latitude-normalize 
+
+area_vec = np.load('area_vec.npy')
+
+tvec = np.reshape(tmax_amjjas2,(30660,11392))
+
+tmax_normed = np.empty([30660,11392])
+for k in range(30660):
+    day = tvec[k,:]
+    tmax_normed[k,:] = day/area_vec
+
+tmax_normed = tmax_normed.astype('float32')
+
+np.save('sm_normed2',tmax_normed)
+tmax_normed2 = np.load('sm_normed2.npy')
+
+# get 1991-2020 index
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = dates[~((dates.month == 2) & (dates.day == 29))]
+dates = pd.DataFrame(dates)
+dates['year'] = pd.to_datetime(dates.iloc[:,0]).dt.year
+dates = dates[dates.year.isin(np.arange(1990,2022,1))]
+idx = dates.index.values
+
+tmax_1990_2021 = tmax_normed2[idx,:] # grabbing 1990 and 2021 to complete 15-day moving averages
+
+vec = np.nanmean(tmax_1990_2021,axis=1)
+
+# computing 15-day windows for 1990-2021, then will subset to 1991-2020
+from mvgavg import mvgavg
+z500_15d = np.empty(11680)
+cell = list(vec)
+averages = list(mvgavg(cell,15))
+x1 = cell[:7]
+x2 = averages
+x3 = cell[-7:]
+x2.extend(x3)
+x1.extend(x2)
+z500_15d = x1
+
+# drop 1990 and 2021
+z500_15d = z500_15d[365:]
+z500_15d = z500_15d[:-365]
+
+# compute daily averages of 15-day moving average for 1991-2020
+daily_avg = np.empty(365)
+cell = np.array(z500_15d)
+years = np.split(cell,30)
+for i in range(365):
+    x1 = years[0][i]
+    x2 = years[1][i]
+    x3 = years[2][i]
+    x4 = years[3][i]
+    x5 = years[4][i]
+    x6 = years[5][i]
+    x7 = years[6][i]
+    x8 = years[7][i]
+    x9 = years[8][i]
+    x10 = years[9][i]
+    x11 = years[10][i]
+    x12 = years[11][i]
+    x13 = years[12][i]
+    x14 = years[13][i]
+    x15 = years[14][i]
+    x16 = years[15][i]
+    x17 = years[16][i]
+    x18 = years[17][i]
+    x19 = years[18][i]
+    x20 = years[19][i]
+    x21 = years[20][i]
+    x22 = years[21][i]
+    x23 = years[22][i]
+    x24 = years[23][i]
+    x25 = years[24][i]
+    x26 = years[25][i]
+    x27 = years[26][i]
+    x28 = years[27][i]
+    x29 = years[28][i]
+    x30 = years[29][i]
+    allvals = [x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,
+               x21,x22,x23,x24,x25,x26,x27,x28,x29,x30]
+    daily_avg[i] = np.mean(allvals)
+
+np.save('daily_avg_sm2',daily_avg)
+
+# subset "vec" to 1991-2020 so that sd's are only from this period
+vec = vec[365:]
+vec = vec[:-365]
+
+daily_std = np.empty(351) # minus 14 days (7 + 7)
+cell = vec
+years = np.split(cell,30)
+for i in range(351):
+    x1 = years[0][i:i+15]
+    x2 = years[1][i:i+15]
+    x3 = years[2][i:i+15]
+    x4 = years[3][i:i+15]
+    x5 = years[4][i:i+15]
+    x6 = years[5][i:i+15]
+    x7 = years[6][i:i+15]
+    x8 = years[7][i:i+15]
+    x9 = years[8][i:i+15]
+    x10 = years[9][i:i+15]
+    x11 = years[10][i:i+15]
+    x12 = years[11][i:i+15]
+    x13 = years[12][i:i+15]
+    x14 = years[13][i:i+15]
+    x15 = years[14][i:i+15]
+    x16 = years[15][i:i+15]
+    x17 = years[16][i:i+15]
+    x18 = years[17][i:i+15]
+    x19 = years[18][i:i+15]
+    x20 = years[19][i:i+15]
+    x21 = years[20][i:i+15]
+    x22 = years[21][i:i+15]
+    x23 = years[22][i:i+15]
+    x24 = years[23][i:i+15]
+    x25 = years[24][i:i+15]
+    x26 = years[25][i:i+15]
+    x27 = years[26][i:i+15]
+    x28 = years[27][i:i+15]
+    x29 = years[28][i:i+15]
+    x30 = years[29][i:i+15]
+    allvals = [x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,
+               x21,x22,x23,x24,x25,x26,x27,x28,x29,x30]
+    allvals2 = []
+    for j in range(30):
+        allvals2.extend(allvals[j])  
+    daily_std[i] = np.std(allvals2)
+
+std_fill1 = np.zeros(7)
+std_fill2 = np.zeros(7)
+daily_std = np.hstack([std_fill1,daily_std,std_fill2])
+daily_std[:7] = 1000 # changed from 1 to 1000
+daily_std[-7:] = 1000 # changed from 1 to 1000
+
+np.save('daily_std_sm2',daily_std)
+
+# redefine vec for 1940-2023
+vec = np.nanmean(tmax_normed2,axis=1)
+
+tmax_anoms_z = np.empty(30660)
+cell = vec
+averages = daily_avg
+stds = daily_std
+all_avg = np.tile(averages,84)
+all_std = np.tile(stds,84)
+tmax_anoms_z = (cell - all_avg)/all_std
+
+# sanity check - check to make sure z-scores look right
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = dates[~((dates.month == 2) & (dates.day == 29))]
+dates = pd.DataFrame(dates)
+dates['z_score'] = tmax_anoms_z
+
+tmax_anoms_z = tmax_anoms_z.astype('float32')
+np.save('sm_anoms_z2.npy',tmax_anoms_z)
+tmax_anoms_z = np.load('sm_anoms_z2.npy') # this contains spurious values for first 7 and last 7 days of each year (actual anomalies)
+
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+dates.drop(columns='month',inplace=True)
+
+data = np.array(dates.z_score)
+
+np.save('sm_z_normed2',data)
+
+data = np.load('sm_z_normed2.npy')
+
+ds = xr.DataArray(data, name='sm', coords={'time':dates.iloc[:,1]},
+                  dims=['time'])
+
+ds.to_netcdf('sm_z_normed2.nc')
