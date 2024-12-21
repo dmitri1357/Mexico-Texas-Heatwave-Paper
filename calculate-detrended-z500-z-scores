@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+
+'''
+This code calculates standardized anomalies of Z500 (detrended) over the Mexico-Texas domain during April-September (15372 days).
+Standardized anomalies are calculated at each grid cell in 15-day windows centered on each day over 1991-2020.
+'''
+
+import numpy as np
+import pandas as pd
+from mvgavg import mvgavg
+
+z500_all = np.load('z500_all.npy')
+z500_trendlines = np.load('z500_trendlines.npy') # Trendlines were calculated at each latitude over the NHEM during April-Sept
+
+z_reshape = np.reshape(z500_all,(84,365,161,201))
+
+# running this code for entire year even though I only care about Apr-Sept --> so I can calculate z-scores from moving windows
+detrended_z500 = np.empty([84,365,161,201])
+for k in range(161):
+    these_trends = list(z500_trendlines[k,:])
+    this_lat = z_reshape[:,:,k,:]
+    for j in range(201):
+        vals_at_this_cell = this_lat[:,:,j]
+        for i in range(84):
+            this_trend = these_trends[i]
+            yr = vals_at_this_cell[i,:]
+            detrended_z500[i,:,k,j] = yr - this_trend
+
+detrended_z500 = np.reshape(detrended_z500,(30660,161,201))
+
+np.save('detrended_z500',detrended_z500.astype('float32'))
+
+# get 1991-2020 index
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = dates[~((dates.month == 2) & (dates.day == 29))]
+dates = pd.DataFrame(dates)
+dates['year'] = pd.to_datetime(dates.iloc[:,0]).dt.year
+dates = dates[dates.year.isin(np.arange(1990,2022,1))]
+idx = dates.index.values
+
+tmax_1990_2021 = detrended_z500[idx,:] # grabbing 1990 and 2021 to complete 15-day moving averages
+
+# computing 15-day windows for 1990-2021, then will subset to 1991-2020
+vec = np.reshape(tmax_1990_2021,(11680,32361))
+z500_15d = np.empty([11680,32361])
+for k in range(32361):
+    cell = list(vec[:,k])
+    averages = list(mvgavg(cell,15))
+    x1 = cell[:7]
+    x2 = averages
+    x3 = cell[-7:]
+    x2.extend(x3)
+    x1.extend(x2)
+    z500_15d[:,k] = x1
+
+# drop 1990 and 2021
+z500_15d = z500_15d[365:,:]
+z500_15d = z500_15d[:-365,:]
+
+# compute daily averages of 15-day moving windows for 1991-2020
+daily_avg = np.empty([32361,365])
+for k in range(32361):
+    cell = z500_15d[:,k]
+    years = np.split(cell,30)
+    for i in range(365):
+        x1 = years[0][i]
+        x2 = years[1][i]
+        x3 = years[2][i]
+        x4 = years[3][i]
+        x5 = years[4][i]
+        x6 = years[5][i]
+        x7 = years[6][i]
+        x8 = years[7][i]
+        x9 = years[8][i]
+        x10 = years[9][i]
+        x11 = years[10][i]
+        x12 = years[11][i]
+        x13 = years[12][i]
+        x14 = years[13][i]
+        x15 = years[14][i]
+        x16 = years[15][i]
+        x17 = years[16][i]
+        x18 = years[17][i]
+        x19 = years[18][i]
+        x20 = years[19][i]
+        x21 = years[20][i]
+        x22 = years[21][i]
+        x23 = years[22][i]
+        x24 = years[23][i]
+        x25 = years[24][i]
+        x26 = years[25][i]
+        x27 = years[26][i]
+        x28 = years[27][i]
+        x29 = years[28][i]
+        x30 = years[29][i]
+        allvals = [x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,
+                   x21,x22,x23,x24,x25,x26,x27,x28,x29,x30]
+        daily_avg[k,i] = np.mean(allvals)
+
+# subset "vec" to 1991-2020 so that sd's are only from this period
+vec = vec[365:,:]
+vec = vec[:-365,:]
+
+# compute daily sd's of 15-day moving windows for 1991-2020
+daily_std = np.empty([32361,351]) # minus 14 days (7 + 7)
+for k in range(32361):
+    cell = vec[:,k]
+    years = np.split(cell,30)
+    for i in range(351):
+        x1 = years[0][i:i+15]
+        x2 = years[1][i:i+15]
+        x3 = years[2][i:i+15]
+        x4 = years[3][i:i+15]
+        x5 = years[4][i:i+15]
+        x6 = years[5][i:i+15]
+        x7 = years[6][i:i+15]
+        x8 = years[7][i:i+15]
+        x9 = years[8][i:i+15]
+        x10 = years[9][i:i+15]
+        x11 = years[10][i:i+15]
+        x12 = years[11][i:i+15]
+        x13 = years[12][i:i+15]
+        x14 = years[13][i:i+15]
+        x15 = years[14][i:i+15]
+        x16 = years[15][i:i+15]
+        x17 = years[16][i:i+15]
+        x18 = years[17][i:i+15]
+        x19 = years[18][i:i+15]
+        x20 = years[19][i:i+15]
+        x21 = years[20][i:i+15]
+        x22 = years[21][i:i+15]
+        x23 = years[22][i:i+15]
+        x24 = years[23][i:i+15]
+        x25 = years[24][i:i+15]
+        x26 = years[25][i:i+15]
+        x27 = years[26][i:i+15]
+        x28 = years[27][i:i+15]
+        x29 = years[28][i:i+15]
+        x30 = years[29][i:i+15]
+        allvals = [x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,
+                   x21,x22,x23,x24,x25,x26,x27,x28,x29,x30]
+        allvals2 = []
+        for j in range(30):
+            allvals2.extend(allvals[j])
+        daily_std[k,i] = np.std(allvals2)
+
+std_fill1 = np.zeros([32361,7])
+std_fill2 = np.zeros([32361,7])
+daily_std = np.hstack([std_fill1,daily_std,std_fill2])
+daily_std[:,:7] = 1000 # dummy values as placeholders for first 7 days of January - I won't need them since I'm working with April-Sept
+daily_std[:,-7:] = 1000 # dummy values as placeholders for last 7 days of December - I won't need them since I'm working with April-Sept
+
+# redefine vec for 1940-2023
+vec = np.reshape(detrended_z500,(30660,32361))
+
+# compute standardized anomalies from the daily averages and sd's calculated above
+z500_anoms_z = np.empty([32361,30660])
+for k in range(32361):
+    cell = vec[:,k]
+    averages = daily_avg[k,:]
+    stds = daily_std[k,:]
+    all_avg = np.tile(averages,84)
+    all_std = np.tile(stds,84)
+    z500_anoms_z[k,:] = (cell - all_avg)/all_std
+
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = dates[~((dates.month == 2) & (dates.day == 29))]
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+idx = dates.index.values
+
+z500_anoms_z = z500_anoms_z[:,idx]
+
+# flip the lats and save again
+zvec = np.reshape(z500_anoms_z,(161,201,15372))
+z500_flipped = np.empty([161,201,15372])
+for k in range(15372):
+    day = zvec[:,:,k]
+    z500_flipped[:,:,k] = np.flipud(day)
+
+z500_anoms_z = z500_flipped.astype('float32')
+np.save('z500_anoms_z_MXTX.npy',z500_anoms_z)
