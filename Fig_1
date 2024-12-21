@@ -39,6 +39,7 @@ cb.ax.tick_params(labelsize=23)
 plt.title('Standardized Tmax anomalies on June 20, 2023', size=20)
 plt.clim(-3,3)
 m.readshapefile('texas_mexico',name='null',color='b',linewidth=2) # shapefile of Mexico-Texas domain can be found in accompanying Zenodo repository
+m.readshapefile('circulation_bbox',name='null',color='k',linewidth=3) # this is the shapefile of the rectangle used for analog matching
 plt.savefig('fig_5a.pdf',dpi=600)
 
 # Fig 1b
