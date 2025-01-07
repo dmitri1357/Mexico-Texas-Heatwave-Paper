@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+# ERA5 annual GMST timeseries downloaded from Copernicus:
+file = 'C3S_PR_202410_Fig1_timeseries_annual_global_temperature_anomalies_ref1850-1900_data.csv'
+
+data = pd.read_csv(file, skiprows=7)
+
+# Subset to 1940-2023
+data = data[data['year'] <= 2023]
+
+np.save('era5_gmst_anoms',np.array(data['2t_ano']))
