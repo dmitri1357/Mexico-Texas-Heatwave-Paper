@@ -73,14 +73,14 @@ ann_averages = [np.nanmean(split[k]) for k in range(84)]
 
 plt.plot(ann_averages)
 
-berk_temps = np.load('berk_temps.npy') # load Berkeley Earth global temp. time series for detrending
+era5_gmst_anoms = np.load('era5_gmst_anoms.npy') # load ERA5 GMST time series for detrending
 
 trendline = []
 for i in range(84):
     if i == 0:
         trendline.append(0)
     else:
-        trendline.append(berk_temps[i]-berk_temps[0])
+        trendline.append(era5_gmst_anoms[i]-era5_gmst_anoms[0])
 plt.plot(trendline)
 
 np.save('tmax_trend_increments',trendline)
