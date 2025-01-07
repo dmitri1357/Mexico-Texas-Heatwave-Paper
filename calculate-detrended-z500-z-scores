@@ -10,22 +10,20 @@ import pandas as pd
 from mvgavg import mvgavg
 
 z500_all = np.load('z500_all.npy')
-z500_trendlines = np.load('z500_trendlines.npy') # Trendlines were calculated at each latitude over the NHEM during April-Sept
+z500_trendline = np.load('z500_trendline.npy')
 
 z_reshape = np.reshape(z500_all,(84,365,161,201))
 
 # running this code for entire year even though I only care about Apr-Sept --> so I can calculate z-scores from moving windows
 detrended_z500 = np.empty([84,365,161,201])
 for k in range(161):
-    these_trends = list(z500_trendlines[k,:])
     this_lat = z_reshape[:,:,k,:]
     for j in range(201):
         vals_at_this_cell = this_lat[:,:,j]
         for i in range(84):
-            this_trend = these_trends[i]
+            this_trend_val = z500_trendline[i]
             yr = vals_at_this_cell[i,:]
-            detrended_z500[i,:,k,j] = yr - this_trend
-
+            detrended_z500[i,:,k,j] = yr - this_trend_val
 detrended_z500 = np.reshape(detrended_z500,(30660,161,201))
 
 np.save('detrended_z500',detrended_z500.astype('float32'))
