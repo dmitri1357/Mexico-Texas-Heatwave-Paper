@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+'''
+This code calculates the annual incremental changes in Z500 at each N. Hemisphere latitude band that intersects the bounding box used for circulation pattern matching (17-35N).
+After averaging the trends, this is used to detrend the Z500 fields prior to analogue matching.
+'''
+
+import numpy as np
+import pandas as pd
+
+# calculate z500 trendlines at each 0.25 degree latitude band 
+z500_global = np.load('z500_global_all.npy') # this dataset is 28gb and was not uploaded to Zenodo as a result. This calculation was performed on a compute node on the WSU HPC cluster. This dataset contains daily Z500 for a slice of the northern hemisphere (5-45°N, reflecting a much larger domain since the study was originally intended to encompass all of central America with a buffer for analogue matching) between 1940-2023 at 0.25° resolution, and can be easily computed from raw ERA5 data provided by ECMWF.
+
+# full dataset has 161 latitude bands (5-45N) since I originally intended a larger study domain, subsetting to 17-35N here
+arr2 = z500_global[:,40:113,:] # ERA5 lats are upside down
+
+# subset to April-September
+dates = pd.date_range(start='1/1/1940', end='12/31/2023')
+dates = pd.DataFrame(dates)
+dates['month'] = pd.to_datetime(dates.iloc[:,0]).dt.month
+dates = dates[dates.month.isin([4,5,6,7,8,9])]
+idx = dates.index.values
+
+arr2 = arr2[idx,:]
+
+# output is 73 latitude increments (17-35°N at 0.25° resolution) and 84 timesteps (annual from 1940-2023, inclusive)
+z500_trendlines = np.empty([73,84])
+for k in range(73):
+    this_lat = arr2[:,k,:]
+    splits = np.split(this_lat,84,axis=0)
+    avgs = [np.mean(splits[j]) for j in range(84)]
+    vals1 = []
+    for i in range(84):
+        if i == 0:
+            vals1.append(0)
+        else:
+            vals1.append(avgs[i]-avgs[0])
+    z500_trendlines[k,:] = vals1
+
+# calculate domain-average Z500 trendline for 1940-2023
+domain_trendline = np.nanmean(z500_trendlines,axis=0)
+
+np.save('z500_trendline',domain_trendline)
