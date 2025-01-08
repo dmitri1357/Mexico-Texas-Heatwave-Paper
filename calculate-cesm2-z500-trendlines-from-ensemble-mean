@@ -39,4 +39,6 @@ for j in range(26):
     for k in range(161):
         trend_increments[j,k] = timeseries[k]-timeseries[0]
 
-np.save(f'z500_trendlines{c_idx}',trend_increments)
+domain_trendline = np.mean(trend_increments,axis=0)
+
+np.save(f'z500_trendline{c_idx}',domain_trendline)
