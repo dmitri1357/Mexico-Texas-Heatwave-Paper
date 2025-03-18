@@ -18,7 +18,7 @@ data = pd.DataFrame({'tmax': tmax, 'sm': sm})
 # Granger causality test
 # Test whether SM can predict tmax
 # maxlag defines the maximum number of lags to test
-max_lag = 7  # Use 7 lags as in your previous analysis
+max_lag = 7  # Use 7 day lags 
 results = grangercausalitytests(data[['tmax', 'sm']], max_lag, verbose=True)
 
 # Test whether tmax can predict SM
